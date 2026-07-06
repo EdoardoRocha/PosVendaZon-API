@@ -105,7 +105,12 @@ app.post("/", async (req, res) => {
 app.get("/", async (req, res) => {});
 
 //Init Server
-app.listen(process.env.PORT, () => {
-  main().catch((err) => console.log(err));
-  console.log(`Servidor rodando na porta ${process.env.PORT}`);
-});
+
+const PORT = process.env.PORT;
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
+}
+
+export default app;
