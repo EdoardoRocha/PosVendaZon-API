@@ -78,7 +78,7 @@ app.post("/", async (req, res) => {
     console.log("ID do lead:", myLead.id);
     console.log(JSON.stringify(req.body, null, 2));
 
-    const kommoUrl = `https://superzon.kommo.com/api/v4/leads/${myLead.id}?with=custom_fields`;
+    const kommoUrl = `https://superzon.kommo.com/api/v4/leads/${myLead.id}?with=custom_fields,contacts`;
 
     const responseKommo = await axios.get(kommoUrl, {
       headers: {
@@ -97,6 +97,8 @@ app.post("/", async (req, res) => {
         ),
     );
 
+    console.log(JSON.stringify(completeData, null, 2));
+
     res.status(200).json("Lead processado com sucesso");
   } catch (error) {
     console.error(error.response?.data || error.message);
@@ -109,7 +111,7 @@ app.post("/", async (req, res) => {
 const PORT = process.env.PORT;
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
-    main().catch((err) => console.error(err.response?.data || err.message));
+    main().catch((err) => console.error(err));
     console.log(`Servidor rodando na porta ${PORT}`);
   });
 }
