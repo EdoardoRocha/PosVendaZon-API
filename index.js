@@ -102,13 +102,14 @@ app.post("/", async (req, res) => {
     console.error(error.response?.data || error.message);
   }
 });
-app.get("/", async (req, res) => {});
+// app.get("/", async (req, res) => {});
 
 //Init Server
 
 const PORT = process.env.PORT;
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
+    main().catch((err) => console.error(err.response?.data || err.message));
     console.log(`Servidor rodando na porta ${PORT}`);
   });
 }
