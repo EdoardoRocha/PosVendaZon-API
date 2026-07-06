@@ -87,17 +87,41 @@ app.post("/", async (req, res) => {
     });
 
     const completeData = responseKommo.data;
+    const customFields = completeData.custom_fields_values || [];
 
     console.log(
       "Campos personalizados: " +
-        JSON.stringify(
-          completeData.custom_fields_values || "Nenhum campo preenchido",
-          null,
-          2,
-        ),
+        JSON.stringify(customFields || "Nenhum campo preenchido", null, 2),
     );
 
-    console.log(JSON.stringify(completeData, null, 2));
+    const obterValorCampo = (nomeOuId) => {
+      const campo = customFields.find(
+        (f) => f.field_name === nomeOuId || f.field_id === nomeOuId,
+      );
+      return campo && campo.values && campo.values[0]
+        ? campo.values[0].value
+        : null;
+    };
+
+    const nomeTecnico = obterValorCampo("Nome do Técnico") || "Não informado";
+    const nomeVendedora =
+      obterValorCampo("Nome da Vendedora") || "Não informado";
+    const vendedoraAvaliacao =
+      obterValorCampo("Avaliação Vendedora") || "MEDIANO";
+    const tecnicoAvaliacao = obterValorCampo("Avaliação Técnico") || "MEDIANO";
+    const desconto = Number(obterValorCampo("Desconto")) || 0;
+    const comentario = obterValorCampo("Comentários/Sugestões") || "";
+
+    const completeFields = [
+      nomeTecnico,
+      nomeVendedora,
+      vendedoraAvaliacao,
+      tecnicoAvaliacao,
+      desconto,
+      comentario,
+    ];
+
+    console.log(JSON.stringify(completeFields, null, 2));
 
     res.status(200).json("Lead processado com sucesso");
   } catch (error) {
