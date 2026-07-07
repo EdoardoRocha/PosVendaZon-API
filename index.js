@@ -70,13 +70,14 @@ const PosVendaSchema = mongoose.model(
 
 //Routes
 app.post("/", async (req, res) => {
-  let avaliacaoVendedora;
-  let avaliacaoTecnico;
-  let comentarios;
-  let descontoCliente;
-  let vendedora;
-  let tecnico;
+  let avaliacaoVendedora = "MEDIANO";
+  let avaliacaoTecnico = "MEDIANO";
+  let comentarios = "Não informado";
+  let descontoCliente = 0;
+  let vendedora = "Não informado";
+  let tecnico = "Não informado";
   try {
+    await main().catch((err) => console.error(err));
     const addedLeads = req.body.leads.add;
 
     const myLead = addedLeads[0];
@@ -94,7 +95,7 @@ app.post("/", async (req, res) => {
 
     const completeData = responseKommo.data;
 
-    const clientName = completeData.name || "Cliente não identificado";
+    const clientName = completeData.name || "Cliente sem nome";
     const customFields = completeData.custom_fields_values || [];
 
     console.log(
@@ -146,7 +147,7 @@ app.post("/", async (req, res) => {
       conversorDeNotas[limparTexto(avaliacaoTecnico)] || 3;
 
     const novaAvaliacao = new PosVendaSchema({
-      cliente_nome: nomeCliente,
+      cliente_nome: clientName,
       vendedora_nome: vendedora,
       vendedora_avaliacao: avaliacaoVendedora,
       vendedora_nota: notaVendedoraFormatada,
