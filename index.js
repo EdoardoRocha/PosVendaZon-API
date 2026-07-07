@@ -162,7 +162,7 @@ app.post("/", async (req, res) => {
 
     await novaAvaliacao.save();
     console.log(
-      `Avaliação do cliente ${nomeCliente} salva no banco com sucesso!`,
+      `Avaliação do cliente ${clientName} salva no banco com sucesso!`,
     );
 
     res.status(200).json("Lead processado e salvo no banco com sucesso");
