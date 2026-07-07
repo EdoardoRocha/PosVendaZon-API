@@ -70,6 +70,12 @@ const PosVendaSchema = mongoose.model(
 
 //Routes
 app.post("/", async (req, res) => {
+  let avaliacaoVendedora;
+  let avaliacaoTecnico;
+  let comentarios;
+  let descontoCliente;
+  let vendedora;
+  let tecnico;
   try {
     const addedLeads = req.body.leads.add;
 
@@ -87,6 +93,8 @@ app.post("/", async (req, res) => {
     });
 
     const completeData = responseKommo.data;
+
+    const clientName = completeData.name || "Cliente não identificado";
     const customFields = completeData.custom_fields_values || [];
 
     console.log(
@@ -94,38 +102,70 @@ app.post("/", async (req, res) => {
         JSON.stringify(customFields || "Nenhum campo preenchido", null, 2),
     );
 
-    const obterValorCampo = (nomeOuId) => {
-      const campo = customFields.find(
-        (f) => f.field_name === nomeOuId || f.field_id === nomeOuId,
-      );
-      return campo && campo.values && campo.values[0]
-        ? campo.values[0].value
-        : null;
+    for (const field of customFields) {
+      switch (field.field_id) {
+        case 1021282:
+          avaliacaoVendedora = field.values[0].value || "Não informado";
+          break;
+        case 1021284:
+          avaliacaoTecnico = field.values[0].value || "Não informado";
+          break;
+        case 1022770:
+          comentarios = field.values[0].value || "Não informado";
+          break;
+        case 1043267:
+          descontoCliente = field.values[0].value || "Não informado";
+          break;
+        case 1034337:
+          vendedora = field.values[0].value || "Não informado";
+          break;
+        case 1034335:
+          tecnico = field.values[0].value || "Não informado";
+          break;
+
+        default:
+          console.log(`Nenhum campo personalizado previsto encontrado.`);
+      }
+    }
+
+    const conversorDeNotas = {
+      RUIM: 1,
+      MEDIANO: 3,
+      EXCELENTE: 5,
     };
 
-    const nomeTecnico = obterValorCampo("Nome do Técnico") || "Não informado";
-    const nomeVendedora =
-      obterValorCampo("Nome da Vendedora") || "Não informado";
-    const vendedoraAvaliacao =
-      obterValorCampo("Avaliação Vendedora") || "MEDIANO";
-    const tecnicoAvaliacao = obterValorCampo("Avaliação Técnico") || "MEDIANO";
-    const desconto = Number(obterValorCampo("Desconto")) || 0;
-    const comentario = obterValorCampo("Comentários/Sugestões") || "";
+    const limparTexto = (texto) =>
+      texto
+        .replace(/[^\w\s]/gi, "")
+        .trim()
+        .toUpperCase();
 
-    const completeFields = [
-      nomeTecnico,
-      nomeVendedora,
-      vendedoraAvaliacao,
-      tecnicoAvaliacao,
-      desconto,
-      comentario,
-    ];
+    const notaVendedoraFormatada =
+      conversorDeNotas[limparTexto(avaliacaoVendedora)] || 3;
+    const notaTecnicoFormatada =
+      conversorDeNotas[limparTexto(avaliacaoTecnico)] || 3;
 
-    console.log(JSON.stringify(completeFields, null, 2));
+    const novaAvaliacao = new PosVendaSchema({
+      cliente_nome: nomeCliente,
+      vendedora_nome: vendedora,
+      vendedora_avaliacao: avaliacaoVendedora,
+      vendedora_nota: notaVendedoraFormatada,
+      tecnico_nome: tecnico,
+      tecnico_avaliacao: avaliacaoTecnico,
+      tecnico_nota: notaTecnicoFormatada,
+      desconto: descontoCliente,
+      comentario: comentarios,
+    });
 
-    res.status(200).json("Lead processado com sucesso");
+    await novaAvaliacao.save();
+    console.log(
+      `Avaliação do cliente ${nomeCliente} salva no banco com sucesso!`,
+    );
+
+    res.status(200).json("Lead processado e salvo no banco com sucesso");
   } catch (error) {
     console.error(error.response?.data || error.message);
+    res.status(500).json("Erro interno na API.");
   }
 });
 // app.get("/", async (req, res) => {});
