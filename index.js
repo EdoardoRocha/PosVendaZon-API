@@ -141,20 +141,22 @@ app.post("/", async (req, res) => {
         .trim()
         .toUpperCase();
 
+    const avaliacaoVendedoraLimpa = limparTexto(avaliacaoVendedora);
+    const avaliacaoTecnicoLimpa = limparTexto(avaliacaoTecnico);
+
     const notaVendedoraFormatada =
-      conversorDeNotas[limparTexto(avaliacaoVendedora)] || 3;
-    const notaTecnicoFormatada =
-      conversorDeNotas[limparTexto(avaliacaoTecnico)] || 3;
+      conversorDeNotas[avaliacaoVendedoraLimpa] || 3;
+    const notaTecnicoFormatada = conversorDeNotas[avaliacaoTecnicoLimpa] || 3;
 
     const novaAvaliacao = new PosVendaSchema({
-      cliente_nome: clientName,
+      cliente_nome: nomeCliente,
       vendedora_nome: vendedora,
-      vendedora_avaliacao: avaliacaoVendedora,
+      vendedora_avaliacao: avaliacaoVendedoraLimpa,
       vendedora_nota: notaVendedoraFormatada,
       tecnico_nome: tecnico,
-      tecnico_avaliacao: avaliacaoTecnico,
+      tecnico_avaliacao: avaliacaoTecnicoLimpa,
       tecnico_nota: notaTecnicoFormatada,
-      desconto: descontoCliente,
+      desconto: Number(descontoCliente) || 0,
       comentario: comentarios,
     });
 
