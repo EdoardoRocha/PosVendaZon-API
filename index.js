@@ -149,7 +149,7 @@ app.post("/", async (req, res) => {
     const notaTecnicoFormatada = conversorDeNotas[avaliacaoTecnicoLimpa] || 3;
 
     const novaAvaliacao = new PosVendaSchema({
-      cliente_nome: nomeCliente,
+      cliente_nome: clientName,
       vendedora_nome: vendedora,
       vendedora_avaliacao: avaliacaoVendedoraLimpa,
       vendedora_nota: notaVendedoraFormatada,
