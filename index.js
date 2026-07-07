@@ -36,11 +36,10 @@ const PosVendaSchema = mongoose.model(
       },
       vendedora_avaliacao: {
         type: String,
-        enum: ["RUIM", "MEDIANO", "EXCELENTE"],
       },
       vendedora_nota: {
         type: Number,
-        required: true,
+        default: null,
       },
       tecnico_nome: {
         type: String,
@@ -48,11 +47,10 @@ const PosVendaSchema = mongoose.model(
       },
       tecnico_avaliacao: {
         type: String,
-        enum: ["RUIM", "MEDIANO", "EXCELENTE"],
       },
       tecnico_nota: {
         type: Number,
-        required: true,
+        default: null,
       },
       desconto: {
         type: Number,
@@ -129,33 +127,44 @@ app.post("/", async (req, res) => {
       }
     }
 
-    const conversorDeNotas = {
-      RUIM: 1,
-      MEDIANO: 3,
-      EXCELENTE: 5,
-    };
+    const processarAvaliacao = (textoOriginal) => {
+      if (!textoOriginal || textoOriginal === "Não informado") {
+        return { texto: "Não informado", nota: null };
+      }
 
-    const limparTexto = (texto) =>
-      texto
+      const textoLimpo = String(textoOriginal)
         .replace(/[^\w\s]/gi, "")
         .trim()
         .toUpperCase();
+      const conversorDeNotas = {
+        RUIM: 1,
+        MEDIANO: 3,
+        EXCELENTE: 5,
+      };
 
-    const avaliacaoVendedoraLimpa = limparTexto(avaliacaoVendedora);
-    const avaliacaoTecnicoLimpa = limparTexto(avaliacaoTecnico);
+      if (dicionario[textoLimpo] !== undefined) {
+        return {
+          texto: textoLimpo,
+          nota: dicionario[textoLimpo],
+        };
+      }
+      return {
+        texto: textoOriginal,
+        nota: null,
+      };
+    };
 
-    const notaVendedoraFormatada =
-      conversorDeNotas[avaliacaoVendedoraLimpa] || 3;
-    const notaTecnicoFormatada = conversorDeNotas[avaliacaoTecnicoLimpa] || 3;
+    const resultadoVendedora = processarAvaliacao(avaliacaoVendedora);
+    const resultadoTecnico = processarAvaliacao(avaliacaoTecnico);
 
     const novaAvaliacao = new PosVendaSchema({
       cliente_nome: clientName,
       vendedora_nome: vendedora,
-      vendedora_avaliacao: avaliacaoVendedoraLimpa,
-      vendedora_nota: notaVendedoraFormatada,
+      vendedora_avaliacao: resultadoVendedora.texto,
+      vendedora_nota: resultadoVendedora.nota,
       tecnico_nome: tecnico,
-      tecnico_avaliacao: avaliacaoTecnicoLimpa,
-      tecnico_nota: notaTecnicoFormatada,
+      tecnico_avaliacao: resultadoTecnico.texto,
+      tecnico_nota: resultadoTecnico.nota,
       desconto: Number(descontoCliente) || 0,
       comentario: comentarios,
     });
