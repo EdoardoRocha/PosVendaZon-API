@@ -136,7 +136,7 @@ app.post("/", async (req, res) => {
         .replace(/[^\w\s]/gi, "")
         .trim()
         .toUpperCase();
-      const conversorDeNotas = {
+      const dicionario = {
         RUIM: 1,
         MEDIANO: 3,
         EXCELENTE: 5,
