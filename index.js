@@ -59,6 +59,9 @@ const PosVendaSchema = mongoose.model(
       comentario: {
         type: String,
       },
+      codigo_cliente: {
+        type: String,
+      },
     },
     {
       timestamps: true,
@@ -74,6 +77,7 @@ app.post("/", async (req, res) => {
   let descontoCliente = 0;
   let vendedora = "Não informado";
   let tecnico = "Não informado";
+  let codigoCliente;
   try {
     await main().catch((err) => console.error(err));
     const addedLeads = req.body.leads.add;
@@ -121,6 +125,9 @@ app.post("/", async (req, res) => {
         case 1034335:
           tecnico = field.values[0].value || "Não informado";
           break;
+        case 888160:
+          codigoCliente = field.values[0].value || "Não informado";
+          break;
 
         default:
           console.log(`Nenhum campo personalizado previsto encontrado.`);
@@ -167,6 +174,7 @@ app.post("/", async (req, res) => {
       tecnico_nota: resultadoTecnico.nota,
       desconto: Number(descontoCliente) || 0,
       comentario: comentarios,
+      codigo_cliente: codigoCliente,
     });
 
     await novaAvaliacao.save();
@@ -240,6 +248,21 @@ app.get("/dashboard", async (req, res) => {
     res.status(500).json({
       erro: "Erro interno ao tentar processar os dados para o dashboard.",
     });
+  }
+});
+
+app.get("/avaliacoes", async (req, res) => {
+  try {
+    await main().catch((err) => console.error(err));
+
+    const todasAvaliacoes = await PosVendaSchema.find().sort({ createdAt: -1 });
+
+    res.status(200).json(todasAvaliacoes);
+  } catch (error) {
+    console.error(error.message);
+    res
+      .status(500)
+      .json({ erro: "Falha na busca das avaliações no banco de dados." });
   }
 });
 
