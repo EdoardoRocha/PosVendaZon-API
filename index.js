@@ -192,7 +192,7 @@ app.get("/dashboard", async (req, res) => {
               $group: {
                 _id: "$tecnico_nome",
                 quantidade_avaliacoes: { $sum: 1 },
-                media_avaliacoes: { $avg: "$tecnico_nota" },
+                media_avaliacao: { $avg: "$tecnico_nota" },
               },
             },
             {
