@@ -180,10 +180,71 @@ app.post("/", async (req, res) => {
     res.status(500).json("Erro interno na API.");
   }
 });
-// app.get("/", async (req, res) => {});
+app.get("/dashboard", async (req, res) => {
+  try {
+    await main().catch((err) => console.error(err.message));
+
+    const dadosGraficos = await PosVendaSchema.aggregate([
+      {
+        $facet: {
+          resumo_tecnicos: [
+            {
+              $group: {
+                _id: "$tecnico_nome",
+                quantidade_avaliacoes: { $sum: 1 },
+                media_avaliacoes: { $avg: "$tecnico_nota" },
+              },
+            },
+            {
+              $project: {
+                nome: "$_id",
+                quantidade_avaliacoes: 1,
+                media_avaliacao: {
+                  $round: [{ $ifNull: ["$media_avaliacao", 0] }, 2],
+                },
+                _id: 0,
+              },
+            },
+            {
+              $sort: { quantidade_avaliacoes: -1 },
+            },
+          ],
+          resumo_vendedoras: [
+            {
+              $group: {
+                _id: "$vendedora_nome",
+                quantidade_avaliacoes: { $sum: 1 },
+                media_avaliacao: { $avg: "$vendedora_nota" },
+              },
+            },
+            {
+              $project: {
+                nome: "$_id",
+                quantidade_avaliacoes: 1,
+                media_avaliacao: {
+                  $round: [{ $ifNull: ["$media_avaliacao", 0] }, 2],
+                },
+                _id: 0,
+              },
+            },
+            { $sort: { quantidade_avaliacoes: -1 } },
+          ],
+        },
+      },
+    ]);
+
+    res.status(200).json(dadosGraficos[0]);
+  } catch (error) {
+    console.error("Erro ao gerar dados do dashboard:", error);
+    res
+      .status(500)
+      .json({
+        erro: "Erro interno ao tentar processar os dados para o dashboard.",
+      });
+  }
+});
 
 //Init Server
-
 const PORT = process.env.PORT;
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
