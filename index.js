@@ -234,13 +234,12 @@ app.get("/dashboard", async (req, res) => {
     ]);
 
     res.status(200).json(dadosGraficos[0]);
+    console.log(JSON.stringify(dadosGraficos[0], null, 2));
   } catch (error) {
     console.error("Erro ao gerar dados do dashboard:", error);
-    res
-      .status(500)
-      .json({
-        erro: "Erro interno ao tentar processar os dados para o dashboard.",
-      });
+    res.status(500).json({
+      erro: "Erro interno ao tentar processar os dados para o dashboard.",
+    });
   }
 });
 
