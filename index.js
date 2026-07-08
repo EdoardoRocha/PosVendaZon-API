@@ -3,12 +3,14 @@ import express from "express";
 import mongoose from "mongoose";
 import { Schema } from "mongoose";
 import axios from "axios";
+import cors from "cors";
 
 const app = express();
 
 //Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 //Config mongoDB
 let urlConnection =
