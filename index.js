@@ -18,7 +18,6 @@ let urlConnection =
 
 async function main() {
   await mongoose.connect(urlConnection);
-  console.log("Mongo conectado.");
 }
 
 // Models
@@ -84,9 +83,6 @@ app.post("/", async (req, res) => {
 
     const myLead = addedLeads[0];
 
-    console.log("ID do lead:", myLead.id);
-    console.log(JSON.stringify(req.body, null, 2));
-
     const kommoUrl = `https://superzon.kommo.com/api/v4/leads/${myLead.id}?with=custom_fields,contacts`;
 
     const responseKommo = await axios.get(kommoUrl, {
@@ -99,11 +95,6 @@ app.post("/", async (req, res) => {
 
     const clientName = completeData.name || "Cliente sem nome";
     const customFields = completeData.custom_fields_values || [];
-
-    console.log(
-      "Campos personalizados: " +
-        JSON.stringify(customFields || "Nenhum campo preenchido", null, 2),
-    );
 
     for (const field of customFields) {
       switch (field.field_id) {
@@ -178,9 +169,6 @@ app.post("/", async (req, res) => {
     });
 
     await novaAvaliacao.save();
-    console.log(
-      `Avaliação do cliente ${clientName} salva no banco com sucesso!`,
-    );
 
     res.status(200).json("Lead processado e salvo no banco com sucesso");
   } catch (error) {
@@ -188,6 +176,7 @@ app.post("/", async (req, res) => {
     res.status(500).json("Erro interno na API.");
   }
 });
+
 app.get("/dashboard", async (req, res) => {
   try {
     await main().catch((err) => console.error(err.message));
@@ -242,7 +231,6 @@ app.get("/dashboard", async (req, res) => {
     ]);
 
     res.status(200).json(dadosGraficos[0]);
-    console.log(JSON.stringify(dadosGraficos[0], null, 2));
   } catch (error) {
     console.error("Erro ao gerar dados do dashboard:", error);
     res.status(500).json({
