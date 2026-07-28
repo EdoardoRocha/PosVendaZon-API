@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test",
+    "relatorio:duplicados": "node scripts/relatorioDuplicados.js"
   },
   "keywords": [],
   "author": "",

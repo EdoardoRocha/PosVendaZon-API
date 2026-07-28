@@ -1,9 +1,13 @@
 import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
-import { Schema } from "mongoose";
 import axios from "axios";
 import cors from "cors";
+import {
+  garantirIndicesPosVenda,
+  PosVenda,
+} from "./src/models/PosVenda.js";
+import { persistirAvaliacao } from "./src/services/avaliacaoService.js";
 
 const app = express();
 
@@ -18,60 +22,26 @@ let urlConnection =
     ? process.env.MONGO_URL_DEV
     : process.env.MONGO_URL;
 
-async function main() {
-  await mongoose.connect(urlConnection);
-}
+let connectionPromise;
 
-// Models
-const PosVendaSchema = mongoose.model(
-  "PosVenda",
-  new Schema(
-    {
-      cliente_nome: {
-        type: String,
-        required: true,
-      },
-      vendedora_nome: {
-        type: String,
-        required: true,
-      },
-      vendedora_avaliacao: {
-        type: String,
-      },
-      vendedora_nota: {
-        type: Number,
-        default: null,
-      },
-      tecnico_nome: {
-        type: String,
-        required: true,
-      },
-      tecnico_avaliacao: {
-        type: String,
-      },
-      tecnico_nota: {
-        type: Number,
-        default: null,
-      },
-      desconto: {
-        type: Number,
-        default: 0,
-      },
-      comentario: {
-        type: String,
-      },
-      codigo_cliente: {
-        type: String,
-      },
-    },
-    {
-      timestamps: true,
-    },
-  ),
-);
+async function main() {
+  if (!connectionPromise) {
+    connectionPromise = mongoose.connect(urlConnection)
+      .then(async (connection) => {
+        await garantirIndicesPosVenda();
+        return connection;
+      })
+      .catch((error) => {
+        connectionPromise = null;
+        throw error;
+      });
+  }
+  return connectionPromise;
+}
 
 //Routes
 app.post("/", async (req, res) => {
+  const recebidoEm = new Date();
   let avaliacaoVendedora = "MEDIANO";
   let avaliacaoTecnico = "MEDIANO";
   let comentarios = "Não informado";
@@ -80,10 +50,16 @@ app.post("/", async (req, res) => {
   let tecnico = "Não informado";
   let codigoCliente;
   try {
-    await main().catch((err) => console.error(err));
-    const addedLeads = req.body.leads.add;
+    await main();
+    const addedLeads = req.body?.leads?.add;
 
-    const myLead = addedLeads[0];
+    const myLead = addedLeads?.[0];
+    if (!myLead?.id) {
+      return res.status(400).json({
+        status: "webhook_invalido",
+        mensagem: "O webhook não contém um lead válido.",
+      });
+    }
 
     const kommoUrl = `https://superzon.kommo.com/api/v4/leads/${myLead.id}?with=custom_fields,contacts`;
 
@@ -157,7 +133,7 @@ app.post("/", async (req, res) => {
     const resultadoVendedora = processarAvaliacao(avaliacaoVendedora);
     const resultadoTecnico = processarAvaliacao(avaliacaoTecnico);
 
-    const novaAvaliacao = new PosVendaSchema({
+    const resultadoPersistencia = await persistirAvaliacao(PosVenda, {
       cliente_nome: clientName,
       vendedora_nome: vendedora,
       vendedora_avaliacao: resultadoVendedora.texto,
@@ -168,11 +144,23 @@ app.post("/", async (req, res) => {
       desconto: Number(descontoCliente) || 0,
       comentario: comentarios,
       codigo_cliente: codigoCliente,
+      kommo_lead_id: String(myLead.id),
+    }, recebidoEm);
+
+    if (resultadoPersistencia.duplicado) {
+      return res.status(200).json({
+        status: "duplicado_ignorado",
+        mensagem: "A avaliação já foi persistida para este cliente neste minuto.",
+        avaliacao_minuto: resultadoPersistencia.avaliacaoMinuto,
+      });
+    }
+
+    return res.status(200).json({
+      status: "inserido",
+      mensagem: "Lead processado e salvo no banco com sucesso.",
+      registro_id: resultadoPersistencia.registroId,
+      avaliacao_minuto: resultadoPersistencia.avaliacaoMinuto,
     });
-
-    await novaAvaliacao.save();
-
-    res.status(200).json("Lead processado e salvo no banco com sucesso");
   } catch (error) {
     console.error(error.response?.data || error.message);
     res.status(500).json("Erro interno na API.");
@@ -181,9 +169,9 @@ app.post("/", async (req, res) => {
 
 app.get("/dashboard", async (req, res) => {
   try {
-    await main().catch((err) => console.error(err.message));
+    await main();
 
-    const dadosGraficos = await PosVendaSchema.aggregate([
+    const dadosGraficos = await PosVenda.aggregate([
       {
         $facet: {
           resumo_tecnicos: [
@@ -243,9 +231,9 @@ app.get("/dashboard", async (req, res) => {
 
 app.get("/avaliacoes", async (req, res) => {
   try {
-    await main().catch((err) => console.error(err));
+    await main();
 
-    const todasAvaliacoes = await PosVendaSchema.find().sort({ createdAt: -1 });
+    const todasAvaliacoes = await PosVenda.find().sort({ createdAt: -1 });
 
     res.status(200).json(todasAvaliacoes);
   } catch (error) {
